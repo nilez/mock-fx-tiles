@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.example.websocket";
+option java_outer_classname = "MockFxPriceingService";
+
+package fx.streaming;
+
+message Empty {}
+
+
+// Request message for streaming prices
+message StreamPriceRequest {
+  string currency_pair = 1;   // e.g., "EUR/USD"
+  string tenor = 2;           // e.g., "SPOT", "1M", "3M"
+}
+
+// Response message containing price information
+message Price {
+  string currency_pair = 1;
+  repeated Quote quotes = 2;
+  string tenor = 3;
+  int64 timestamp = 4;           // Unix timestamp in milliseconds
+}
+
+// Individual quote object
+message Quote {
+  string quote_id = 1;
+  Side side = 2;
+  string price = 3;              // Decimal as string to avoid precision issues
+  string good_for_amount = 4;    // Amount until which the price applies
+}
+
+// Enum for bid/ask side
+enum Side {
+  BID = 0;
+  ASK = 1;
+}
+
+// RX Streaming service
+service PriceStreamService {
+  // Server-side streaming RPC
+  rpc StreamPrice(StreamPriceRequest) returns (stream Price);
+}

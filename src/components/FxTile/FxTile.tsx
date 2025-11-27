@@ -8,9 +8,6 @@ interface FxTileProps {
   ask?: Decimal;
   tenor: string;
   amount: Decimal;
-  ticksPerSecond?: number;
-  serverTicksPerSecond?: number;
-  latencyMs?: number;
 }
 
 const FxTile = memo(({
@@ -18,25 +15,17 @@ const FxTile = memo(({
   bid,
   ask,
   tenor = "SPOT",
-  amount = new Decimal(10000.0),
-  ticksPerSecond: configuredTicksPerSecond,
-  serverTicksPerSecond = 0,
-  latencyMs = 0
+  amount = new Decimal(10000.0)
 }: FxTileProps) => {
   const [currentBid, setCurrentBid] = useState(bid?.toString() || "-");
   const [currentAsk, setCurrentAsk] = useState(ask?.toString() || "-");
   const [isBidUp, setisBidUp] = useState('');
-  const [isAskUp, setisAskUp] = useState('');
-  const [actualTicksPerSecond, setActualTicksPerSecond] = useState(0);
+  const [isAskUp, setisAskUp] = useState('');  
   
   // Use refs to store previous values
   const prevBidRef = useRef<Decimal | undefined>(undefined);
   const prevAskRef = useRef<Decimal | undefined>(undefined);
-  
-  // Track ticks for frequency calculation
-  const tickTimestamps = useRef<number[]>([]);
-  const tickCounterInterval = useRef<NodeJS.Timeout | null>(null);
-
+    
   // Update prices when props change
   useEffect(() => {
     if (bid) {
@@ -45,15 +34,7 @@ const FxTile = memo(({
         const isUp = bid.greaterThan(prevBidRef.current);
         setisBidUp(isUp ? 'up' : 'down');
       }
-      prevBidRef.current = bid;
-      
-      // Record tick timestamp
-      const now = Date.now();
-      tickTimestamps.current.push(now);
-      
-      // Remove timestamps older than 1 second
-      const oneSecondAgo = now - 2000;
-      tickTimestamps.current = tickTimestamps.current.filter(ts => ts > oneSecondAgo);
+      prevBidRef.current = bid;     
     }
     if (ask) {
       setCurrentAsk(ask.toString());
@@ -63,23 +44,7 @@ const FxTile = memo(({
       }
       prevAskRef.current = ask;
     }
-  }, [bid, ask]);
-  
-  // Calculate ticks per second periodically
-  useEffect(() => {
-    tickCounterInterval.current = setInterval(() => {
-      const now = Date.now();
-      const oneSecondAgo = now - 1000;
-      const recentTicks = tickTimestamps.current.filter(ts => ts > oneSecondAgo);
-      setActualTicksPerSecond(recentTicks.length);
-    }, 500); // Update display every 500ms
-    
-    return () => {
-      if (tickCounterInterval.current) {
-        clearInterval(tickCounterInterval.current);
-      }
-    };
-  }, []);
+  }, [bid, ask]); 
 
   // Calculate spread
   const spread = bid && ask ? ask.minus(bid).toFixed(4) : "0.0000";
@@ -109,10 +74,7 @@ const FxTile = memo(({
           <div className={`price ${isAskUp}`}>{currentAsk}</div>
         </button>
       </div>
-      <div className="fx-tile-spread">Spread: {spread}</div>      
-      <div className="fx-tile-footer">
-        <span className="tick-counter">Server: {serverTicksPerSecond} tps | UI: {actualTicksPerSecond} / {configuredTicksPerSecond || 'N/A'} tps | Latency: {latencyMs}ms</span>
-      </div>       
+      <div className="fx-tile-spread">Spread: {spread}</div>
     </div>
   );
 });
